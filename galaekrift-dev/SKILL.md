@@ -1,6 +1,6 @@
 ---
 name: galaekrift-dev
-description: '瑰丽克幻境 GalaekRift Unity 游戏开发副驾驶。USE FOR: Unity C# 游戏功能开发、Bug 修复、系统扩展、代码审查、波次/敌人/炮台/Boss 配置、分屏合作逻辑、Wwise 音频集成与工程操作（通过 Wwise MCP 直接在 Wwise 工程中创建/管理音频对象）、Spine 动画对接、性能优化、代码说明文档编写、项目进度记录。DO NOT USE FOR: 美术资产制作、3D 建模、Spine 骨骼编辑、非 Unity 项目。INVOKES: Wwise MCP (Wwise 工程操作/Event/RTPC/State/Switch/SoundBank), Notion MCP (同步 GitHub/项目文档), memory tools (存档记忆/进度), terminal (git/Unity 操作).'
+description: '瑰丽克幻境 GalaekRift Unity 游戏开发副驾驶。USE FOR: Unity C# 游戏功能开发、Bug 修复、系统扩展、代码审查、波次/敌人/炮台/Boss 配置、分屏合作逻辑、Wwise 音频集成与工程操作（通过 Wwise MCP 直接在 Wwise 工程中创建/管理音频对象）、Spine 动画对接、性能优化、代码说明文档编写、项目进度记录与跨设备记忆同步（.github/ai-memory）。DO NOT USE FOR: 美术资产制作、3D 建模、Spine 骨骼编辑、非 Unity 项目。INVOKES: Wwise MCP (Wwise 工程操作/Event/RTPC/State/Switch/SoundBank), Notion MCP (同步 GitHub/项目文档), memory tools (存档记忆/进度), terminal (git/Unity 操作).'
 argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系统、代码审查、配置调整等'
 ---
 
@@ -22,14 +22,20 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 |------|------|----------|
 | `.github/copilot-instructions.md` | 架构、代码规范、系统详解、扩展指南、代码模式 | **自动注入** |
 | `.github/wwise-mcp-guide.md` | Wwise Unity API、MCP 命令、音乐切换、SFX 对象池、音量控制 | 涉及 Wwise/音频任务时 |
-| `/memories/repo/` | 项目状态、历史决策、已知问题 | **每次任务开始时** |
+| `.github/gameplay-analysis.md` | 17 章玩法深度分析 | 玩法/系统设计任务时 |
+| `.github/gameplay-character-guide.md` | 角色差异化讲解（M10 进度表） | 角色/技能/炮台任务时 |
+| `.github/gameplay-roadmap.md` | 玩法延展方案（roadmap） | 评估新功能优先级时 |
+| **`.github/ai-memory/`** | **跨设备同步的项目记忆**：changelog（变更日志）/ demo-gaps（完成度评估）/ worldbuilding（世界观）/ archive-audit-report（审计报告） | **每次任务开始时** |
+| `/memories/repo/` | 本机本地记忆（可能未入库，作为补充） | 任务开始时补充查阅 |
+
+> **跨设备约定：** `.github/ai-memory/` 已纳入 git，是**多台开发机共享上下文的权威来源**。换机拉取仓库即可恢复记忆。本地 `/memories/repo/` 仅作补充，重要进度务必写入 `.github/ai-memory/` 才能跨设备。
 
 ---
 
 ## 二、核心工作流
 
 ### 每次任务必做
-1. **读记忆** — `/memories/repo/` 了解项目状态
+1. **读记忆** — 先读 `.github/ai-memory/`（跨设备权威记忆），再补充查 `/memories/repo/`，了解项目状态
 2. **读相关代码** — 搜索并阅读涉及的脚本，理解现有实现
 3. **确认关联** — 涉及已有系统时，**必须复用现有代码**，禁止另起炉灶
 4. **按需读取知识文件** — 涉及音频读 `wwise-mcp-guide.md`
@@ -41,7 +47,7 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 
 ### 完成后
 1. `get_errors` 检查编译
-2. 更新 `/memories/repo/` 存档重要决策和新增系统
+2. 更新记忆 — 重要决策/新增系统/进度写入 `.github/ai-memory/`（跨设备同步），本地细节可补 `/memories/repo/`
 3. 推送和 Notion 同步 — 仅在用户要求时执行
 
 ---
@@ -77,8 +83,17 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 ## 五、记忆与协作
 
 ### 记忆管理
-- **必须存档**（`/memories/repo/`）：新增系统概要、Bug 修复记录、架构决策、项目进度
-- **代码说明日志**（大功能）：`.github/changelog-YYYY-MM-DD-[功能名].md`
+- **跨设备同步记忆**（`.github/ai-memory/`，已入库）：
+  - `changelog.md` — 每次重要提交后追加（日期 + git 哈希 + 实现细节）
+  - `demo-gaps.md` — 里程碑节点更新完成度评估
+  - `worldbuilding.md` — 世界观设定变更时更新
+  - `archive-audit-report.md` — 每次存档审计后覆盖更新
+- **本地补充记忆**（`/memories/repo/`）：本机临时上下文、未入库的细节
+- **跨设备同步三原则**（来自 `ai-memory/README.md`）：
+  1. **只放本项目知识** — 不混入其他项目（AIHub / 交易 / 周报 KR 等）或任何**凭据/密码**
+  2. **换机优先读取** — 跨设备工作时先读 `ai-memory/` 建立上下文再动手
+  3. **保持一致** — 内容须与代码/配置/提交一致，发现不一致以最新审计报告为准并同步修正
+- **`.gitignore` 注意**：仓库 `*.md` 默认被忽略，已加 `!.github/` + `!.github/**` 例外；新增 `.github` 下文档须确认未被忽略
 
 ### 协作原则
 1. **中文沟通** — 所有对话和文档
@@ -101,3 +116,6 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 | AEnemy 上帝类直接大改 | 继承子类扩展 |
 | Wwise Event 未加入 Bank | include_in_soundbank + generate_soundbanks |
 | Wwise 路径单反斜杠 | MCP 中用 `\\` 双反斜杠 |
+| 跨设备记忆只写本地 `/memories/` | 重要进度写 `.github/ai-memory/`（入库同步） |
+| 新增 `.github` 文档被 `*.md` 忽略 | 确认 `.gitignore` 有 `!.github/**` 例外 |
+| 把凭据/其他项目写入入库记忆 | 凭据仅留本地 `/memories/`，绝不进仓库 |
