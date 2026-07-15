@@ -25,7 +25,8 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 | `.github/gameplay-analysis.md` | 17 章玩法深度分析 | 玩法/系统设计任务时 |
 | `.github/gameplay-character-guide.md` | 角色差异化讲解（M10 进度表） | 角色/技能/炮台任务时 |
 | `.github/gameplay-roadmap.md` | 玩法延展方案（roadmap） | 评估新功能优先级时 |
-| **`.github/ai-memory/`** | **跨设备同步的项目记忆**：changelog（变更日志）/ demo-gaps（完成度评估）/ worldbuilding（世界观）/ archive-audit-report（审计报告） | **每次任务开始时** |
+| `.github/ai-memory/spine-hud-guide.md` | Spine 驱动玩家 HUD（血条/能量条/金币动画，PlayerInfoBarUi 绑定） | Spine HUD/玩家状态条任务时 |
+| **`.github/ai-memory/`** | **跨设备同步的项目记忆**：changelog（变更日志）/ demo-gaps（完成度评估）/ worldbuilding（世界观）/ archive-audit-report（审计报告）/ spine-hud-guide（Spine HUD 指南） | **每次任务开始时** |
 | `/memories/repo/` | 本机本地记忆（可能未入库，作为补充） | 任务开始时补充查阅 |
 
 > **跨设备约定：** `.github/ai-memory/` 已纳入 git，是**多台开发机共享上下文的权威来源**。换机拉取仓库即可恢复记忆。本地 `/memories/repo/` 仅作补充，重要进度务必写入 `.github/ai-memory/` 才能跨设备。
@@ -48,7 +49,8 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 ### 完成后
 1. `get_errors` 检查编译
 2. 更新记忆 — 重要决策/新增系统/进度写入 `.github/ai-memory/`（跨设备同步），本地细节可补 `/memories/repo/`
-3. 推送和 Notion 同步 — 仅在用户要求时执行
+3. **提交只 add 本次相关文件** — 工作区常有大量无关的美术资产/`.meta` 变更；提交时逐个列出本次改动的文件路径 `git add`，**禁止 `git add -A` / `git add .`**，避免混入无关变更。新建脚本记得一并提交其 `.cs.meta`
+4. 推送和 Notion 同步 — 仅在用户要求时执行
 
 ---
 
@@ -67,6 +69,22 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 | 分屏 | Player1_UI/Player2_UI + Layer 25/26 + 双实例模式 | 单实例 UI |
 
 物理层（不可改动）：6/7=P1/P2Items | 10=Player | 22=Enemy | 23=Turret | 24=Base | 25/26=P1/P2Cam
+
+### 分屏可见性隔离标准做法
+
+让某个世界物体**只在指定玩家半屏渲染**（如 Ryna 专属感叹号、单人技能指示器、拾取提示）：
+
+- **机制**：每个 `PlayerCamera` 有 `targetlayer` 字段，其摄像机 culling mask 只渲染自己的 `targetlayer`（见 `LevelManager.ConfigurePerPlayerCameraCulling()`）。
+- **正确做法**：把物体（及其**所有子物体**）的 layer 设为目标玩家 `PlayerCamera.targetlayer`：
+  ```csharp
+  int layer = Mathf.Clamp(playerCamera.targetlayer, 0, 31);
+  foreach (Transform t in GetComponentsInChildren<Transform>(true))
+      t.gameObject.layer = layer;
+  ```
+  范例：`MyDroneMode.cs:494`、`AlertIconView.ApplyVisibilityLayer()`。
+- **禁止硬编码** `LayerMask.NameToLayer("Player1Cam")` / `"Player2Cam"`：角色可能是 P1 也可能是 P2（取决于选角/`Switch Player`）。用 `targetlayer` 从玩家摄像机动态取，不管谁在哪个 slot 都自动正确。
+- **从角色定位摄像机**：`player.myStageInfo._playerCamera`（`PlayerStageInfo._playerCamera`）。
+- **World Space 前置**：若物体是 UI Canvas，须 `Render Mode = World Space` 才能跟随世界物体 + billboard。
 
 ---
 
@@ -88,6 +106,7 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
   - `demo-gaps.md` — 里程碑节点更新完成度评估
   - `worldbuilding.md` — 世界观设定变更时更新
   - `archive-audit-report.md` — 每次存档审计后覆盖更新
+  - `spine-hud-guide.md` — Spine HUD 实现指南（PlayerInfoBarUi 绑定），Spine HUD 变更时更新
 - **本地补充记忆**（`/memories/repo/`）：本机临时上下文、未入库的细节
 - **跨设备同步三原则**（来自 `ai-memory/README.md`）：
   1. **只放本项目知识** — 不混入其他项目（AIHub / 交易 / 周报 KR 等）或任何**凭据/密码**
@@ -114,6 +133,9 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 | 新枚举散落各文件 | 统一放 DataTypes.cs |
 | 忽略分屏兼容 | 双实例/Layer 25-26 |
 | AEnemy 上帝类直接大改 | 继承子类扩展 |
+| 在 inactive GameObject 上 `StartCoroutine`（静默失败，协程不跑） | 先 `SetActive(true)` 再启动协程；勿把激活写在协程体内 |
+| 多个 MonoBehaviour 共享输入/状态时执行顺序竞态（读到过期状态） | 用 `[DefaultExecutionOrder]` 固定先后，让状态生产者先跑（如 `TurretRepairInteractor(-10)` 先于技能系统） |
+| 分屏可见性隔离硬编码 Player1Cam/Player2Cam | 用 `PlayerCamera.targetlayer` 动态取，P1/P2 都对（见「分屏可见性隔离标准做法」） |
 | Wwise Event 未加入 Bank | include_in_soundbank + generate_soundbanks |
 | Wwise 路径单反斜杠 | MCP 中用 `\\` 双反斜杠 |
 | 跨设备记忆只写本地 `/memories/` | 重要进度写 `.github/ai-memory/`（入库同步） |
