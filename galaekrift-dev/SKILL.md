@@ -13,7 +13,7 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 ## 一、项目与知识索引
 
 - **本地仓库：** `D:\UnityProject\GalaekRift_Dev`
-- **引擎：** Unity 6.0.23f1 | C# | URP | Windows (Steam) x64
+- **引擎：** Unity 6000.3.8f1 | C# | URP | Windows (Steam) x64
 - **模式：** 本地双人合作（分屏）
 
 ### 知识文件（按需读取）
@@ -22,11 +22,14 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 |------|------|----------|
 | `.github/copilot-instructions.md` | 架构、代码规范、系统详解、扩展指南、代码模式 | **自动注入** |
 | `.github/wwise-mcp-guide.md` | Wwise Unity API、MCP 命令、音乐切换、SFX 对象池、音量控制 | 涉及 Wwise/音频任务时 |
-| `.github/gameplay-analysis.md` | 17 章玩法深度分析 | 玩法/系统设计任务时 |
+| `.github/gameplay-analysis.md` | 26 章玩法深度分析（2026-08-06 新增 §26 可交互提示系统） | 玩法/系统设计任务时 |
 | `.github/gameplay-character-guide.md` | 角色差异化讲解（M10 进度表） | 角色/技能/炮台任务时 |
 | `.github/gameplay-roadmap.md` | 玩法延展方案（roadmap） | 评估新功能优先级时 |
+| `.github/gameplay-core-design.md` | 核心玩法设计蓝图（献祭支柱循环 + 目标关卡结构，2026-08-11 新建） | 玩法结构/关卡设计任务时 |
+| `.github/damage-popup-system.md` | 伤害飘字系统（TextPopUp / HealthManager 锚定 / 分屏层） | 伤害 UI / 飘字任务时 |
+| `.github/gameplay-ui-lifecycle.md` | UI 生命周期（加载/切换/销毁时序） | UI 生命周期/加载流任务时 |
 | `.github/ai-memory/spine-hud-guide.md` | Spine 驱动玩家 HUD（血条/能量条/金币动画，PlayerInfoBarUi 绑定） | Spine HUD/玩家状态条任务时 |
-| **`.github/ai-memory/`** | **跨设备同步的项目记忆**：changelog（变更日志）/ demo-gaps（完成度评估）/ worldbuilding（世界观）/ archive-audit-report（审计报告）/ spine-hud-guide（Spine HUD 指南） | **每次任务开始时** |
+| **`.github/ai-memory/`** | **跨设备同步的项目记忆**：changelog（变更日志）/ demo-gaps（完成度评估）/ worldbuilding（世界观）/ archive-audit-report（存档点审计）/ thirdparty-audit-report（第三方组件审计）/ spine-hud-guide（Spine HUD 指南） | **每次任务开始时** |
 | `/memories/repo/` | 本机本地记忆（可能未入库，作为补充） | 任务开始时补充查阅 |
 
 > **跨设备约定：** `.github/ai-memory/` 已纳入 git，是**多台开发机共享上下文的权威来源**。换机拉取仓库即可恢复记忆。本地 `/memories/repo/` 仅作补充，重要进度务必写入 `.github/ai-memory/` 才能跨设备。
@@ -40,6 +43,17 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 2. **读相关代码** — 搜索并阅读涉及的脚本，理解现有实现
 3. **确认关联** — 涉及已有系统时，**必须复用现有代码**，禁止另起炉灶
 4. **按需读取知识文件** — 涉及音频读 `wwise-mcp-guide.md`
+
+### 审计委派（遇审计类需求时）
+
+本 Skill 负责**开发**，**不直接做深度审计**。遇到以下需求时，**委派给专用审计 Skill `galaekrift-archive-audit`**（本 Skill 只做轻量核实）：
+
+- 「审计」「存档点对齐」「文档-代码一致性核对」等请求
+- 脚本重命名 / 资产重组后的**全库文档 sweep**
+- 数值核对（技能时长 / 伤害 / 半径 / 枚举成员）
+- 第三方组件审计
+
+委派时把「审计范围 + 上次审计 HEAD（读 `archive-audit-report.md` 头部）」一并给出。详细审计规则见该 Skill 的「三、审计规则」。
 
 ### 开发原则
 - **优先复用** — 现有单例、接口、基类、对象池
@@ -69,6 +83,18 @@ argument-hint: '描述你的开发需求：新增功能、修复 Bug、扩展系
 | 分屏 | Player1_UI/Player2_UI + Layer 25/26 + 双实例模式 | 单实例 UI |
 
 物理层（不可改动）：6/7=P1/P2Items | 10=Player | 22=Enemy | 23=Turret | 24=Base | 25/26=P1/P2Cam
+
+### ⚠ 脚本重命名 / 资产重组备忘（2026-08-16）
+
+资产目录已重组，**旧路径已失效**，引用脚本时用新名/新路径：
+
+- **共享战斗脚本更名**：`LightsFiring.cs` → **`LightGunFire.cs`**；`DamagerDealer.cs` → **`DamageDealer.cs`**（修拼写）。已 `git mv` 保留 GUID，全库引用零残留——**禁止再写旧名**。
+- **美术资产统一入 `Assets/Resource/ArtAssets/`**：`Boss_Octopus` / `Common` / `Monsters` / `Player` / `Turrets` / `VFX` 六个子目录。
+- **玩家 prefab**：`ArtAssets/Player/Prefabs/Player_Light.prefab` / `Player_Ryna.prefab`。
+- **怪物 prefab**：`ArtAssets/Monsters/Prefabs/1.Normal_Enemy ~ 6.SmallGrass_Enemy.prefab`（序号+描述 `_Enemy`）。
+- **炮台 prefab**：`ArtAssets/Turrets/Prefabs/` 下 `Light_Turret_{Cannon,Laser,MachineGun}` / `Ryna_Turret_{MachineGun,ExplosiveMine,SlowDown}.prefab`（**新命名已非 `Turret_[类型]`**）。
+- **新顶层 `Assets/Scripts/`**：散装通用脚本（`CantMoveState` / `CorrosionController` / `HitState` / `PathGizmo` / `ProjectileController` 等 9 个）。
+- **炮台特效**：`ArtAssets/VFX/Turrets_VFX/Prefabs/`（Light 18 + Ryna 8，PascalCase 命名）。
 
 ### 分屏可见性隔离标准做法
 
